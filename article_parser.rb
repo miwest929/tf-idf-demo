@@ -3,73 +3,21 @@ require 'stanford-core-nlp'
 require 'debugger'
 
 load 'heapster.rb'
+load 'lib/document_manager.rb'
 
 StanfordCoreNLP.jar_path = "/Users/mwest/Documents/code/stanford-core-nlp/"
 StanfordCoreNLP.model_path = "/Users/mwest/Documents/code/stanford-core-nlp/"
 
 DOC_BASE_PATH = 'docs'
 
-class DocumentManager
-  attr_accessor :content_files, :freq_files
-  attr_accessor :base_path
-
-  BASE_NAME_REGEX = /.*\/(.*)\.(.*)/
-
-  TokenFrequency = Struct.new(:token, :frequency)
-
-  def initialize(base_path)
-    @base_path =  base_path
-    @content_files = Set.new
-    @freq_files = Set.new
-  end
-
-  def add(file)
-    file_match = file.match(BASE_NAME_REGEX)
-
-    base_name = file_match[1]
-    type = file_match[2]
-
-    if type == 'txt'
-      @content_files.add(base_name)
-    elsif type == 'freq'
-      @freq_files.add(base_name)
-    end
-  end
-
-  def docs
-    @content_files.map {|f| "#{f}.txt" }.reject {|f| @freq_files.include?(f)}
-  end
-
-  def contents(file)
-    IO.readlines("#{@base_path}/#{file}")
-  end
-
-  def write_freq_file(file, token_frequency)
-    tokens = token_frequency.map { |k,v| TokenFrequency.new(k, v) }
-    tokens.sort_by! {|i| i.frequency}
-
-    file = File.open("#{@base_path}/#{file}.freq", 'w')
-    tokens.each do |t|
-      file.write("#{t.frequency}      #{t.token}\n")
-    end
-    file.close
-
-    @freq_files.add(file)
-  end
-
-private
-end
-
 documents = DocumentManager.new(DOC_BASE_PATH)
-Dir["#{DOC_BASE_PATH}/*"].select { |e| File.file?(e) }.each do |name|
-  documents.add(name)
-end
+documents.scan
 
 pipeline =  StanfordCoreNLP.load(:tokenize, :ssplit, :pos, :lemma, :parse, :ner, :dcoref)
 TokenFrequency = Struct.new(:token, :frequency)
-documents.docs.each do |file|
-  puts "Processing file #{file}..."
-  text = documents.contents(file).join('')
+documents.unprocessed_docs.each do |file|
+  puts "Processing file #{file.path}..."
+  text = file.contents.join('')
 
   text = StanfordCoreNLP::Annotation.new(text)
   pipeline.annotate(text)
@@ -110,8 +58,9 @@ Dir["#{DOC_BASE_PATH}/*.freq"].each do |file|
   documents[file] = metadata
 end
 
+f = File.open('output.txt', 'w')
 documents.each do |name, metadata|
-  puts "Computing TF.IDF for #{name}..."
+  f.write "Computing TF.IDF for #{name}..\n."
 
   highest_scorers = Heap.new(:max)
   inverted_index = {}
@@ -129,15 +78,13 @@ documents.each do |name, metadata|
     end
   end
 
-  print "Highest scorers: "
   tokens = Set.new
   5.times do
     next_tokens = inverted_index[highest_scorers.pop_root]
     next_tokens.each {|t| tokens.add(t)}
   end
 
-  tokens.each {|t| print "#{t}, "}
-  puts ''
+  f.write "Highest scorers: #{tokens.to_a.join(', ')}\n"
 end
-
+f.close
 puts "Done..."
