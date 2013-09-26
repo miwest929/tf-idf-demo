@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Semantic</title>
+<!--  <link rel="stylesheet" href="css/normalize.css"> -->
+<!--  <link rel="stylesheet" href="css/style.css"> -->
+  <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+</head>
+<body>
+  <script type="text/x-handlebars" id="documents">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <table class='table'>
+            <thead>
+              <tr>
+                <th>All Articles ({{totalCount}})</th>
+                <th><button {{action 'add_doc' target='view'}}>Add Document</button></th>
+              </tr>
+            </thead>
+            {{#each model}}
+            <tr><td>
+                {{#link-to 'document' this}}{{title}}{{/link-to}}
+            </td></tr>
+            {{/each}}
+          </table>
+        </div>
+        <div class="span9">
+          {{outlet}}
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script type='text/x-handlebars' id='add_doc'>
+    <p>Title:</p><input type='text'></input>
+    <p>Contents:</p><input type='text'></input> 
+  </script>
+
+  <script type="text/x-handlebars" id="document">
+    <h1>{{title}}</h1>
+    <p>{{contents}}</p>
+  </script>
+
+  <script src="js/libs/jquery-2.0.3.min.js"></script>
+  <script src="js/libs/handlebars-1.0.0.js"></script>
+  <script src="js/libs/ember-1.0.0-rc.8.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/showdown/0.3.1/showdown.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/moment.js/2.1.0/moment.min.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
